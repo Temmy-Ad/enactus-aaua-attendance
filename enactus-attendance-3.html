@@ -669,33 +669,21 @@ function startScan() {
   document.getElementById('scan-count-badge').textContent = activeSession.attendees.length + ' in';
   renderCheckinList();
 
-  // Load jsQR dynamically to ensure it is ready
-  if (!window.jsQR) {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
-    script.onload = () => openCamera();
-    document.head.appendChild(script);
-  } else {
-    openCamera();
-  }
-}
-
-function openCamera() {
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } })
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     .then(stream => {
       scanStream = stream;
       const video = document.getElementById('scan-video');
       video.srcObject = stream;
-      video.onloadedmetadata = () => {
-        video.play();
-        scanActive = true;
-        requestAnimationFrame(scanTick);
-      };
+      video.play();
+      scanActive = true;
+      requestAnimationFrame(scanTick);
     })
-    .catch(() => {
+    .catch(err => {
       document.getElementById('scan-ui').innerHTML = '<div class="card mt-4" style="text-align:center"><p style="color:var(--red);font-weight:700">Camera access denied</p><p class="text-sm text-muted mt-1">Please allow camera access in your browser settings and reload.</p></div>';
     });
 }
+
+function openCamera() {}
 
 function stopScan() {
   scanActive = false;
