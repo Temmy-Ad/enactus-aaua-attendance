@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Enactus AAUA · Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #060a08; --surface: #0e1610; --surface2: #141f16;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+    --green: #3ddc84; --green-dim: rgba(61,220,132,0.12); --green-border: rgba(61,220,132,0.25);
+    --red: #ff5f57; --red-dim: rgba(255,95,87,0.1);
+    --amber: #ffb340; --amber-dim: rgba(255,179,64,0.1);
+    --blue: #4fa3ff; --blue-dim: rgba(79,163,255,0.1);
+    --text: #f0f4f1; --muted: rgba(240,244,241,0.4); --faint: rgba(240,244,241,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
+  body { max-width: 480px; margin: 0 auto; }
+
+  .screen { display: none; padding: 28px 20px 100px; animation: fadeUp 0.22s ease forwards; }
+  .screen.active { display: block; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    background: rgba(6,10,8,0.94); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around; padding: 10px 0 18px;
+  }
+  .nav-btn {
+    background: none; border: none; color: var(--faint);
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 500;
+    padding: 6px 16px; border-radius: 12px; cursor: pointer; transition: color 0.2s;
+  }
+  .nav-btn.active { color: var(--green); }
+  .nav-btn .icon { font-size: 18px; }
+
+  .label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; line-height: 1.1; }
+  h2 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; }
+  h3 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+  .accent { color: var(--green); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 18px; }
+  .card-sm { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+
+  .btn-primary {
+    width: 100%; background: var(--green); color: #050d07;
+    border: none; border-radius: 14px; padding: 16px;
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-ghost {
+    width: 100%; background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 14px; padding: 16px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-ghost:active { transform: scale(0.97); }
+  .btn-sm {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px;
+    padding: 8px 16px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .back-btn { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; padding: 2px 8px 2px 0; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  input, select {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 12px 14px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+    transition: border-color 0.2s; width: 100%;
+  }
+  input:focus, select:focus { border-color: var(--green); }
+  input::placeholder { color: var(--faint); }
+  select option { background: #0e1610; }
+
+  .pill { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; border: 1px solid; }
+  .pill-green { color: var(--green); border-color: var(--green-border); background: var(--green-dim); }
+  .pill-red { color: var(--red); border-color: rgba(255,95,87,0.25); background: var(--red-dim); }
+  .pill-amber { color: var(--amber); border-color: rgba(255,179,64,0.25); background: var(--amber-dim); }
+  .pill-blue { color: var(--blue); border-color: rgba(79,163,255,0.25); background: var(--blue-dim); }
+
+  .scan-viewport { position: relative; border-radius: 20px; overflow: hidden; background: #000; aspect-ratio: 1/1; width: 100%; }
+  #scan-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #scan-canvas { display: none; }
+  .scan-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .scan-frame { width: 56%; height: 56%; position: relative; }
+  .scan-frame::before, .scan-frame::after, .scan-frame > span::before, .scan-frame > span::after {
+    content: ''; position: absolute; width: 22px; height: 22px; border-color: var(--green); border-style: solid;
+  }
+  .scan-frame::before { top:0; left:0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+  .scan-frame::after  { top:0; right:0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+  .scan-frame > span::before { bottom:0; left:0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+  .scan-frame > span::after  { bottom:0; right:0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+  .scan-line {
+    position: absolute; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    animation: scanMove 2s ease-in-out infinite;
+  }
+  @keyframes scanMove { 0%,100% { top:10%; opacity:0.9; } 50% { top:88%; opacity:0.4; } }
+
+  .result-toast { border-radius: 16px; padding: 16px; border: 1px solid; animation: fadeUp 0.2s ease forwards; }
+  .result-toast.success { background: var(--green-dim); border-color: var(--green-border); }
+  .result-toast.duplicate { background: var(--amber-dim); border-color: rgba(255,179,64,0.25); }
+  .result-toast.unknown { background: var(--red-dim); border-color: rgba(255,95,87,0.25); }
+  .result-toast.no-session { background: var(--red-dim); border-color: rgba(255,95,87,0.25); }
+
+  .progress-bar { height: 5px; background: var(--surface2); border-radius: 10px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; border-radius: 10px; transition: width 0.4s; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .stat-box { background: var(--surface2); border-radius: 12px; padding: 12px; text-align: center; }
+  .stat-num { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+
+  .checkin-list { max-height: 160px; overflow-y: auto; }
+  .qr-wrap { background: #fff; padding: 12px; border-radius: 14px; display: inline-block; }
+  .form-stack { display: flex; flex-direction: column; gap: 14px; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row-between { display: flex; align-items: center; justify-content: space-between; }
+  .col { display: flex; flex-direction: column; gap: 4px; }
+  .gap-2 { gap: 8px; } .gap-3 { gap: 12px; }
+  .mt-1{margin-top:4px} .mt-2{margin-top:8px} .mt-3{margin-top:12px} .mt-4{margin-top:16px} .mt-5{margin-top:20px}
+  .space-y > * + * { margin-top: 10px; }
+  .text-sm{font-size:13px} .text-xs{font-size:11px}
+  .text-muted{color:var(--muted)} .text-green{color:var(--green)} .text-red{color:var(--red)} .text-amber{color:var(--amber)}
+  .font-bold{font-weight:700} .font-semi{font-weight:600} .text-center{text-align:center}
+  .hidden{display:none!important}
+  .empty{text-align:center;padding:40px 20px;color:var(--faint);font-size:13px}
+  .session-banner { background: var(--green-dim); border: 1px solid var(--green-border); border-radius: 16px; padding: 14px 16px; }
+  .search-wrap { position: relative; }
+  .search-wrap input { padding-left: 38px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; pointer-events: none; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* LOADING OVERLAY */
+  #loading-overlay {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 999; gap: 16px;
+  }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid var(--border2);
+    border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* SETUP SCREEN */
+  #screen-setup { background: var(--bg); }
+  .setup-card { background: var(--surface); border: 1px solid var(--green-border); border-radius: 20px; padding: 24px; }
+  .step-num {
+    width: 28px; height: 28px; background: var(--green); color: #050d07;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 13px; flex-shrink: 0;
+  }
+
+  /* ERROR BANNER */
+  .error-banner { background: var(--red-dim); border: 1px solid rgba(255,95,87,0.25); border-radius: 14px; padding: 14px 16px; }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-overlay">
+  <div style="font-family:Syne;font-size:22px;font-weight:800;color:var(--green)">Enactus AAUA</div>
+  <div class="spinner"></div>
+  <p id="loading-msg" style="color:var(--muted);font-size:13px">Connecting to database...</p>
+</div>
+
+<!-- ===================== SETUP ===================== -->
+<div id="screen-setup" class="screen" style="padding-bottom:40px">
+  <p class="label">First Time Setup</p>
+  <h1 class="mt-1">Connect to<br><span class="accent">Google Sheets</span></h1>
+  <p class="text-sm text-muted mt-2">This is a one-time setup. Once done, all data lives in your Google Sheet and works across every device.</p>
+
+  <div class="setup-card mt-4">
+    <h3>Follow these steps</h3>
+    <div class="space-y mt-4">
+      <div class="row" style="align-items:flex-start;gap:12px">
+        <div class="step-num">1</div>
+        <div>
+          <p class="font-semi text-sm">Open Google Sheets</p>
+          <p class="text-xs text-muted mt-1">Go to sheets.google.com and create a new blank spreadsheet. Name it "Enactus AAUA Attendance".</p>
+        </div>
+      </div>
+      <div class="row" style="align-items:flex-start;gap:12px">
+        <div class="step-num">2</div>
+        <div>
+          <p class="font-semi text-sm">Open Apps Script</p>
+          <p class="text-xs text-muted mt-1">In the Sheet, click Extensions → Apps Script. Delete everything in the editor.</p>
+        </div>
+      </div>
+      <div class="row" style="align-items:flex-start;gap:12px">
+        <div class="step-num">3</div>
+        <div>
+          <p class="font-semi text-sm">Paste the script</p>
+          <p class="text-xs text-muted mt-1">Copy the Apps Script code from the second file you downloaded and paste it into the editor. Click Save (Ctrl+S).</p>
+        </div>
+      </div>
+      <div class="row" style="align-items:flex-start;gap:12px">
+        <div class="step-num">4</div>
+        <div>
+          <p class="font-semi text-sm">Deploy as Web App</p>
+          <p class="text-xs text-muted mt-1">Click Deploy → New Deployment → Web App. Set "Who has access" to Anyone. Click Deploy. Copy the Web App URL.</p>
+        </div>
+      </div>
+      <div class="row" style="align-items:flex-start;gap:12px">
+        <div class="step-num">5</div>
+        <div>
+          <p class="font-semi text-sm">Paste URL below</p>
+          <p class="text-xs text-muted mt-1">Paste the copied URL into the box below and tap Connect.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="field mt-4">
+    <label>Apps Script Web App URL</label>
+    <input id="setup-url" placeholder="https://script.google.com/macros/s/.../exec" type="url"/>
+  </div>
+  <div id="setup-error" class="error-banner mt-3 hidden">
+    <p style="color:var(--red);font-weight:600;font-size:13px" id="setup-error-msg"></p>
+  </div>
+  <button class="btn-primary mt-4" onclick="saveScriptUrl()" id="setup-btn">Connect & Launch →</button>
+</div>
+
+<!-- ===================== HOME ===================== -->
+<div id="screen-home" class="screen">
+  <p class="label">Enactus AAUA</p>
+  <h1 class="mt-1">Attendance<br><span class="accent">System</span></h1>
+  <div class="grid-2 mt-4">
+    <div class="card" style="text-align:center">
+      <div style="font-family:Syne;font-size:32px;font-weight:800" id="home-member-count">0</div>
+      <div class="text-xs text-muted mt-1">Members</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-family:Syne;font-size:32px;font-weight:800;color:var(--green)" id="home-session-count">0</div>
+      <div class="text-xs text-muted mt-1">Sessions</div>
+    </div>
+  </div>
+  <div class="mt-4 space-y">
+    <button class="btn-primary" onclick="goTo('sessions')"><span>📋</span> Sessions & Scanning</button>
+    <button class="btn-ghost" onclick="goTo('tracker')"><span>📊</span> Attendance Tracker</button>
+    <button class="btn-ghost" onclick="goTo('members')"><span>👥</span> Manage Members</button>
+    <button class="btn-ghost" onclick="goTo('qrcards')"><span>🪪</span> Generate QR Cards</button>
+  </div>
+  <div id="home-active-session" class="session-banner mt-4 hidden">
+    <p class="label" style="color:var(--green)">Active Session</p>
+    <p class="font-bold mt-1" id="home-session-name"></p>
+    <p class="text-sm text-muted mt-1" id="home-session-meta"></p>
+    <button class="btn-sm mt-3" onclick="goTo('scan')" style="background:var(--green);color:#050d07;font-weight:700;border:none">Resume Scanning →</button>
+  </div>
+</div>
+
+<!-- ===================== SESSIONS ===================== -->
+<div id="screen-sessions" class="screen">
+  <div class="row">
+    <button class="back-btn" onclick="goTo('home')">←</button>
+    <h2>Sessions</h2>
+  </div>
+  <div id="sessions-active-banner" class="session-banner mt-4 hidden">
+    <p class="label" style="color:var(--green)">Active Session</p>
+    <p class="font-bold mt-1" id="sessions-active-name"></p>
+    <p class="text-sm text-muted" id="sessions-active-meta"></p>
+    <button class="btn-sm mt-3" onclick="goTo('scan')" style="background:var(--green);color:#050d07;font-weight:700;border:none">Continue Scanning →</button>
+  </div>
+  <div id="new-session-toggle" class="mt-4">
+    <button class="btn-primary" onclick="toggleNewSession()">+ New Session</button>
+  </div>
+  <div id="new-session-form" class="card mt-4 hidden">
+    <h3>New Session</h3>
+    <div class="form-stack mt-3">
+      <div class="field"><label>Session Name</label><input id="ns-name" placeholder="e.g. May General Meeting"/></div>
+      <div class="field"><label>Meeting Type</label>
+        <select id="ns-type">
+          <option>General Meeting</option><option>Executive Meeting</option>
+          <option>Project Meeting</option><option>Training Session</option>
+          <option>AGM</option><option>Summit</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Notes (optional)</label><input id="ns-notes" placeholder="Any additional info"/></div>
+      <div class="row gap-3 mt-1">
+        <button class="btn-ghost" style="flex:1" onclick="toggleNewSession()">Cancel</button>
+        <button class="btn-primary" style="flex:1" id="ns-submit" onclick="createSession()">Start →</button>
+      </div>
+    </div>
+  </div>
+  <p class="label mt-5">All Sessions</p>
+  <div id="sessions-list" class="space-y mt-2"><div class="empty">No sessions yet.</div></div>
+</div>
+
+<!-- ===================== SCAN ===================== -->
+<div id="screen-scan" class="screen">
+  <div class="row-between">
+    <div class="row">
+      <button class="back-btn" onclick="stopScan(); goTo('sessions')">←</button>
+      <div>
+        <h2>Scanning</h2>
+        <p class="text-xs text-muted" id="scan-session-label">No active session</p>
+      </div>
+    </div>
+    <div id="scan-count-badge" class="pill pill-green hidden">0 in</div>
+  </div>
+  <div id="scan-no-session" class="card mt-4 hidden" style="text-align:center">
+    <p style="color:var(--red);font-weight:700">No active session</p>
+    <p class="text-sm text-muted mt-1">Create a session before scanning.</p>
+    <button class="btn-sm mt-3" onclick="goTo('sessions')">Go to Sessions</button>
+  </div>
+  <div id="scan-ui">
+    <div class="scan-viewport mt-4">
+      <video id="scan-video" autoplay muted playsinline></video>
+      <canvas id="scan-canvas"></canvas>
+      <div class="scan-overlay"><div class="scan-frame"><span></span><div class="scan-line"></div></div></div>
+    </div>
+    <div id="scan-result" class="mt-3 hidden"></div>
+    <div class="card mt-3">
+      <p class="label">Checked In <span id="scan-checkin-count">0</span></p>
+      <div id="scan-checkin-list" class="checkin-list mt-2">
+        <p class="text-sm text-muted">No scans yet.</p>
+      </div>
+    </div>
+
+    <button onclick="endSession()" class="btn-ghost mt-3" style="border-color:rgba(255,95,87,0.3);color:var(--red)">
+      ⏹ End Session
+    </button>
+  </div>
+</div>
+
+<!-- ===================== SESSION DETAIL ===================== -->
+<div id="screen-session-detail" class="screen">
+  <div class="row">
+    <button class="back-btn" onclick="goTo('sessions')">←</button>
+    <div><h2 id="sd-name"></h2><p class="text-xs text-muted" id="sd-meta"></p></div>
+  </div>
+  <div class="stats-grid mt-4">
+    <div class="stat-box"><div class="stat-num text-green" id="sd-present-count">0</div><div class="text-xs text-muted mt-1">Present</div></div>
+    <div class="stat-box"><div class="stat-num text-red" id="sd-absent-count">0</div><div class="text-xs text-muted mt-1">Absent</div></div>
+    <div class="stat-box"><div class="stat-num" id="sd-rate">0%</div><div class="text-xs text-muted mt-1">Rate</div></div>
+  </div>
+  <p class="label mt-4">Present</p>
+  <div id="sd-present-list" class="space-y mt-2"></div>
+  <p class="label mt-4">Absent</p>
+  <div id="sd-absent-list" class="space-y mt-2"></div>
+</div>
+
+<!-- ===================== MEMBERS ===================== -->
+<div id="screen-members" class="screen">
+  <div class="row">
+    <button class="back-btn" onclick="goTo('home')">←</button>
+    <h2>Members <span id="member-count-title" class="text-muted text-sm font-bold"></span></h2>
+  </div>
+  <div class="search-wrap mt-4">
+    <span class="search-icon">🔍</span>
+    <input id="member-search" placeholder="Search name, department..." oninput="renderMembers()"/>
+  </div>
+  <button class="btn-primary mt-3" onclick="toggleAddMember()">+ Add Member</button>
+  <div id="add-member-form" class="card mt-3 hidden">
+    <h3>Add Member</h3>
+    <div class="form-stack mt-3">
+      <div class="field"><label>Full Name *</label><input id="am-name" placeholder="e.g. Temiloluwa Adebayo David"/></div>
+      <div class="field"><label>Position</label><input id="am-position" placeholder="e.g. Financial Secretary"/></div>
+      <div class="field"><label>Department</label><input id="am-dept" placeholder="e.g. Economics"/></div>
+      <div class="field"><label>Level</label>
+        <select id="am-level">
+          <option value="">Select level</option>
+          <option>100</option><option>200</option><option>300</option><option>400</option><option>500</option><option>Graduate</option>
+        </select>
+      </div>
+      <div class="field"><label>Phone Number</label><input id="am-phone" placeholder="e.g. 08012345678" type="tel"/></div>
+      <div class="field"><label>Gender</label>
+        <select id="am-gender"><option>Male</option><option>Female</option></select>
+      </div>
+      <div class="row gap-3">
+        <button class="btn-ghost" style="flex:1" onclick="toggleAddMember()">Cancel</button>
+        <button class="btn-primary" style="flex:1" id="am-submit" onclick="addMember()">Add Member</button>
+      </div>
+    </div>
+  </div>
+  <!-- Edit member modal -->
+  <div id="edit-member-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:flex;align-items:flex-end;justify-content:center">
+    <div class="card" style="width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:24px 20px 40px;max-height:90vh;overflow-y:auto">
+      <div class="row-between" style="margin-bottom:16px">
+        <h3>Edit Member</h3>
+        <button onclick="closeEditModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">×</button>
+      </div>
+      <div class="form-stack">
+        <input id="em-id" type="hidden"/>
+        <div class="field"><label>Full Name *</label><input id="em-name" placeholder="Full name"/></div>
+        <div class="field"><label>Position</label><input id="em-position" placeholder="Position"/></div>
+        <div class="field"><label>Department</label><input id="em-dept" placeholder="Department"/></div>
+        <div class="field"><label>Level</label>
+          <select id="em-level">
+            <option value="">Select level</option>
+            <option>100</option><option>200</option><option>300</option><option>400</option><option>500</option><option>Graduate</option>
+          </select>
+        </div>
+        <div class="field"><label>Phone Number</label><input id="em-phone" placeholder="Phone number" type="tel"/></div>
+        <div class="field"><label>Gender</label>
+          <select id="em-gender"><option>Male</option><option>Female</option></select>
+        </div>
+        <div class="row gap-3 mt-1">
+          <button class="btn-ghost" style="flex:1" onclick="closeEditModal()">Cancel</button>
+          <button class="btn-primary" style="flex:1" id="em-submit" onclick="saveEditMember()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="members-list" class="space-y mt-4"></div>
+</div>
+
+<!-- ===================== QR CARDS ===================== -->
+<div id="screen-qrcards" class="screen">
+  <div class="row">
+    <button class="back-btn" onclick="goTo('home')">←</button>
+    <h2>QR Cards</h2>
+  </div>
+  <p class="text-sm text-muted mt-1">Tap a member to generate their personal QR. They screenshot it and keep it on their phone.</p>
+  <div id="qr-list" class="space-y mt-4"></div>
+</div>
+
+<!-- ===================== TRACKER ===================== -->
+<div id="screen-tracker" class="screen">
+  <div class="row">
+    <button class="back-btn" onclick="goTo('home')">←</button>
+    <h2>Tracker</h2>
+  </div>
+  <p class="text-sm text-muted mt-1">Full attendance history per member across all sessions.</p>
+  <div class="search-wrap mt-4">
+    <span class="search-icon">🔍</span>
+    <input id="tracker-search" placeholder="Search member..." oninput="renderTracker()"/>
+  </div>
+  <div id="tracker-list" class="space-y mt-4"></div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-home" onclick="goTo('home')"><span class="icon">⌂</span><span>Home</span></button>
+  <button class="nav-btn" id="nav-sessions" onclick="goTo('sessions')"><span class="icon">📋</span><span>Sessions</span></button>
+  <button class="nav-btn" id="nav-tracker" onclick="goTo('tracker')"><span class="icon">📊</span><span>Track</span></button>
+  <button class="nav-btn" id="nav-members" onclick="goTo('members')"><span class="icon">👥</span><span>Members</span></button>
+</nav>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+let SCRIPT_URL = localStorage.getItem('en_script_url') || '';
+
+// ============================================================
+// STATE (always loaded from Sheet)
+// ============================================================
+let members = [];
+let sessions = [];
+let activeSession = null;
+let currentView = 'home';
+let scanStream = null;
+let scanActive = false;
+let scanCooldown = false;
+
+// ============================================================
+// API
+// ============================================================
+async function api(payload) {
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e) { throw new Error('Invalid response: ' + text.slice(0,200)); }
+}
+
+async function loadAll() {
+  const data = await api({ action: 'getAll' });
+  members = data.members || [];
+  sessions = data.sessions || [];
+  activeSession = data.activeSession || null;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  const overlay = document.getElementById('loading-overlay');
+  const msg = document.getElementById('loading-msg');
+
+  if (!SCRIPT_URL) {
+    overlay.style.display = 'none';
+    showSetupScreen();
+    return;
+  }
+
+  try {
+    msg.textContent = 'Loading data from Google Sheets...';
+    await loadAll();
+    overlay.style.display = 'none';
+    document.querySelector('.bottom-nav').style.display = 'flex';
+    goTo('home');
+  } catch(e) {
+    overlay.style.display = 'none';
+    showSetupScreen('Could not connect. Check your URL and try again.');
+  }
+}
+
+function showSetupScreen(err) {
+  document.querySelector('.bottom-nav').style.display = 'none';
+  const screens2 = document.querySelectorAll('.screen');
+  screens2.forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-setup').classList.add('active');
+  if (err) {
+    document.getElementById('setup-error').classList.remove('hidden');
+    document.getElementById('setup-error-msg').textContent = err;
+  }
+}
+
+async function saveScriptUrl() {
+  const url = document.getElementById('setup-url').value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    document.getElementById('setup-error').classList.remove('hidden');
+    document.getElementById('setup-error-msg').textContent = 'Please enter a valid Apps Script URL.';
+    return;
+  }
+  const btn = document.getElementById('setup-btn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting...';
+  SCRIPT_URL = url;
+  try {
+    await loadAll();
+    localStorage.setItem('en_script_url', url);
+    document.getElementById('setup-error').classList.add('hidden');
+    document.querySelector('.bottom-nav').style.display = 'flex';
+    document.getElementById('screen-setup').classList.remove('active');
+    goTo('home');
+  } catch(e) {
+    document.getElementById('setup-error').classList.remove('hidden');
+    document.getElementById('setup-error-msg').textContent = 'Connection failed. Double-check the URL and that you deployed as "Anyone".';
+    btn.disabled = false;
+    btn.textContent = 'Connect & Launch →';
+  }
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+const allScreens = ['home','sessions','scan','session-detail','members','qrcards','tracker','setup'];
+const navScreens = ['home','sessions','tracker','members'];
+
+function goTo(screen, param) {
+  if (currentView === 'scan' && screen !== 'scan') stopScan();
+  allScreens.forEach(s => document.getElementById('screen-'+s)?.classList.remove('active'));
+  document.getElementById('screen-'+screen).classList.add('active');
+  navScreens.forEach(s => {
+    const btn = document.getElementById('nav-'+s);
+    if (btn) btn.classList.toggle('active', s === screen);
+  });
+  currentView = screen;
+  if (screen === 'home') renderHome();
+  if (screen === 'sessions') renderSessions();
+  if (screen === 'scan') startScan();
+  if (screen === 'session-detail') renderSessionDetail(param);
+  if (screen === 'members') renderMembers();
+  if (screen === 'qrcards') renderQRCards();
+  if (screen === 'tracker') renderTracker();
+}
+
+// ============================================================
+// HOME
+// ============================================================
+function renderHome() {
+  document.getElementById('home-member-count').textContent = members.length;
+  document.getElementById('home-session-count').textContent = sessions.length;
+  const banner = document.getElementById('home-active-session');
+  if (activeSession) {
+    banner.classList.remove('hidden');
+    document.getElementById('home-session-name').textContent = activeSession.name;
+    document.getElementById('home-session-meta').textContent = activeSession.type + ' · ' + activeSession.attendees.length + ' checked in';
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+// ============================================================
+// SESSIONS
+// ============================================================
+let newSessionOpen = false;
+function toggleNewSession() {
+  newSessionOpen = !newSessionOpen;
+  document.getElementById('new-session-form').classList.toggle('hidden', !newSessionOpen);
+  document.getElementById('new-session-toggle').classList.toggle('hidden', newSessionOpen);
+}
+
+async function createSession() {
+  const name = document.getElementById('ns-name').value.trim();
+  if (!name) { alert('Please enter a session name.'); return; }
+  const btn = document.getElementById('ns-submit');
+  btn.disabled = true; btn.textContent = 'Creating...';
+  const session = {
+    id: 'S' + Date.now(),
+    name,
+    type: document.getElementById('ns-type').value,
+    notes: document.getElementById('ns-notes').value.trim(),
+    date: new Date().toISOString(),
+    attendees: []
+  };
+  try {
+    await api({ action: 'createSession', session });
+    sessions.unshift(session);
+    activeSession = session;
+    document.getElementById('ns-name').value = '';
+    document.getElementById('ns-notes').value = '';
+    newSessionOpen = false;
+    document.getElementById('new-session-form').classList.add('hidden');
+    document.getElementById('new-session-toggle').classList.remove('hidden');
+    goTo('scan');
+  } catch(e) {
+    alert('Failed to create session. Check your connection.');
+  }
+  btn.disabled = false; btn.textContent = 'Start →';
+}
+
+function renderSessions() {
+  const banner = document.getElementById('sessions-active-banner');
+  if (activeSession) {
+    banner.classList.remove('hidden');
+    document.getElementById('sessions-active-name').textContent = activeSession.name;
+    document.getElementById('sessions-active-meta').textContent = activeSession.type + ' · ' + activeSession.attendees.length + ' checked in';
+  } else { banner.classList.add('hidden'); }
+
+  const list = document.getElementById('sessions-list');
+  if (sessions.length === 0) { list.innerHTML = '<div class="empty">No sessions yet.</div>'; return; }
+  list.innerHTML = sessions.map(s => {
+    const date = new Date(s.date).toLocaleDateString('en-NG', { day:'numeric', month:'short', year:'numeric' });
+    const isActive = activeSession && activeSession.id === s.id;
+    return `<div class="card-sm" style="cursor:pointer" onclick="goTo('session-detail','${s.id}')">
+      <div class="row-between">
+        <div>
+          <p class="font-semi">${s.name} ${isActive ? '<span class="pill pill-green" style="font-size:9px">Active</span>' : ''}</p>
+          <p class="text-xs text-muted mt-1">${s.type} · ${date}</p>
+        </div>
+        <div class="row gap-2">
+          <span class="pill pill-blue">${s.attendees.length} present</span>
+          <button onclick="deleteSession('${s.id}', event)" style="background:none;border:none;color:var(--faint);font-size:18px;cursor:pointer;padding:2px 6px">×</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// SCAN
+// ============================================================
+function startScan() {
+  const hasSession = !!activeSession;
+  document.getElementById('scan-no-session').classList.toggle('hidden', hasSession);
+  document.getElementById('scan-ui').classList.toggle('hidden', !hasSession);
+  if (!hasSession) return;
+
+  document.getElementById('scan-session-label').textContent = activeSession.name;
+  document.getElementById('scan-count-badge').classList.remove('hidden');
+  document.getElementById('scan-count-badge').textContent = activeSession.attendees.length + ' in';
+  renderCheckinList();
+
+  // Load jsQR dynamically to ensure it is ready
+  if (!window.jsQR) {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
+    script.onload = () => openCamera();
+    document.head.appendChild(script);
+  } else {
+    openCamera();
+  }
+}
+
+function openCamera() {
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } })
+    .then(stream => {
+      scanStream = stream;
+      const video = document.getElementById('scan-video');
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play();
+        scanActive = true;
+        requestAnimationFrame(scanTick);
+      };
+    })
+    .catch(() => {
+      document.getElementById('scan-ui').innerHTML = '<div class="card mt-4" style="text-align:center"><p style="color:var(--red);font-weight:700">Camera access denied</p><p class="text-sm text-muted mt-1">Please allow camera access in your browser settings and reload.</p></div>';
+    });
+}
+
+function stopScan() {
+  scanActive = false;
+  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+}
+
+function scanTick() {
+  if (!scanActive) return;
+  const video = document.getElementById('scan-video');
+  const canvas = document.getElementById('scan-canvas');
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    if (window.jsQR) {
+      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+      if (code && code.data && !scanCooldown) {
+        scanCooldown = true;
+        setTimeout(() => { scanCooldown = false; }, 2500);
+        handleScanResult(code.data);
+      }
+    }
+  }
+  requestAnimationFrame(scanTick);
+}
+
+async function handleScanResult(data) {
+  if (!activeSession) { showScanResult('no-session', null); return; }
+  const member = members.find(m => m.id === data);
+  if (!member) { showScanResult('unknown', null); return; }
+  if (activeSession.attendees.find(a => a.memberId === member.id)) {
+    showScanResult('duplicate', member); return;
+  }
+  const entry = { memberId: member.id, name: member.fullName, time: new Date().toISOString() };
+  // Optimistic UI update
+  activeSession.attendees.push(entry);
+  const idx = sessions.findIndex(s => s.id === activeSession.id);
+  if (idx !== -1) sessions[idx] = activeSession;
+  document.getElementById('scan-count-badge').textContent = activeSession.attendees.length + ' in';
+  renderCheckinList();
+  showScanResult('success', member);
+  // Sync to Sheet
+  try {
+    await api({ action: 'logAttendance', sessionId: activeSession.id, entry });
+  } catch(e) {
+    console.warn('Sync failed for entry:', entry);
+  }
+}
+
+function showScanResult(type, member) {
+  const el = document.getElementById('scan-result');
+  el.classList.remove('hidden');
+  const icons = { success:'✅', duplicate:'⚠️', unknown:'❌', 'no-session':'🚫' };
+  const msgs = {
+    success: member ? `<p style="color:var(--green);font-weight:700;font-size:15px">${member.fullName}</p><p class="text-xs text-muted mt-1">${[member.position, member.department].filter(Boolean).join(' · ')} · marked present ${new Date().toLocaleTimeString()}</p>` : '',
+    duplicate: member ? `<p style="color:var(--amber);font-weight:700">${member.fullName} already checked in</p><p class="text-xs text-muted mt-1">Duplicate scan ignored</p>` : '',
+    unknown: `<p style="color:var(--red);font-weight:700">Unknown QR Code</p><p class="text-xs text-muted mt-1">This QR is not in the member database</p>`,
+    'no-session': `<p style="color:var(--red);font-weight:700">No active session</p>`
+  };
+  el.className = 'result-toast mt-3 ' + type;
+  el.innerHTML = `<div class="row"><span style="font-size:22px">${icons[type]}</span><div>${msgs[type]}</div></div>`;
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => el.classList.add('hidden'), 3500);
+}
+
+function renderCheckinList() {
+  const el = document.getElementById('scan-checkin-list');
+  document.getElementById('scan-checkin-count').textContent = activeSession.attendees.length;
+  if (activeSession.attendees.length === 0) { el.innerHTML = '<p class="text-sm text-muted">No scans yet.</p>'; return; }
+  el.innerHTML = [...activeSession.attendees].reverse().map(a =>
+    `<div class="row-between" style="padding:5px 0;border-bottom:1px solid var(--border)">
+      <span class="text-sm">${a.name}</span>
+      <span class="text-xs text-muted">${new Date(a.time).toLocaleTimeString()}</span>
+    </div>`
+  ).join('');
+}
+
+function endSession() {
+  if (!confirm('End this session? You can still view it in Sessions.')) return;
+  stopScan();
+  activeSession = null;
+  goTo('sessions');
+}
+
+async function deleteSession(id, e) {
+  e.stopPropagation();
+  if (!confirm('Delete this session and all its attendance records?')) return;
+  try {
+    await api({ action: 'deleteSession', sessionId: id });
+    sessions = sessions.filter(s => s.id !== id);
+    if (activeSession && activeSession.id === id) activeSession = null;
+    renderSessions();
+  } catch(err) {
+    alert('Failed to delete. Check your connection.');
+  }
+}
+
+// ============================================================
+// SESSION DETAIL
+// ============================================================
+function renderSessionDetail(idOrObj) {
+  const session = typeof idOrObj === 'string' ? sessions.find(s => s.id === idOrObj) : sessions[0];
+  if (!session) return;
+  document.getElementById('sd-name').textContent = session.name;
+  document.getElementById('sd-meta').textContent = session.type + ' · ' + new Date(session.date).toLocaleDateString('en-NG', {day:'numeric',month:'short',year:'numeric'});
+  const presentIds = new Set(session.attendees.map(a => a.memberId));
+  const absentMembers = members.filter(m => !presentIds.has(m.id));
+  const rate = members.length > 0 ? Math.round((session.attendees.length / members.length) * 100) : 0;
+  document.getElementById('sd-present-count').textContent = session.attendees.length;
+  document.getElementById('sd-absent-count').textContent = absentMembers.length;
+  document.getElementById('sd-rate').textContent = rate + '%';
+  const presentList = document.getElementById('sd-present-list');
+  presentList.innerHTML = session.attendees.length === 0 ? '<div class="empty">No one checked in.</div>' :
+    session.attendees.map(a => `<div class="card-sm row-between" style="border-color:var(--green-border)">
+      <span class="font-semi text-sm">${a.name}</span>
+      <span class="text-xs text-muted">${new Date(a.time).toLocaleTimeString()}</span>
+    </div>`).join('');
+  const absentList = document.getElementById('sd-absent-list');
+  absentList.innerHTML = absentMembers.length === 0 ? '<div class="empty">Full attendance!</div>' :
+    absentMembers.map(m => `<div class="card-sm" style="border-color:rgba(255,95,87,0.15)"><span class="text-sm text-muted">${m.fullName}</span></div>`).join('');
+}
+
+// ============================================================
+// MEMBERS
+// ============================================================
+let addMemberOpen = false;
+function toggleAddMember() {
+  addMemberOpen = !addMemberOpen;
+  document.getElementById('add-member-form').classList.toggle('hidden', !addMemberOpen);
+}
+
+async function addMember() {
+  const name = document.getElementById('am-name').value.trim();
+  if (!name) { alert('Full name is required.'); return; }
+  const btn = document.getElementById('am-submit');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  const member = {
+    id: 'M' + Date.now(),
+    fullName: name,
+    position: document.getElementById('am-position').value.trim(),
+    department: document.getElementById('am-dept').value.trim(),
+    level: document.getElementById('am-level').value,
+    phone: document.getElementById('am-phone').value.trim(),
+    gender: document.getElementById('am-gender').value
+  };
+  try {
+    await api({ action: 'addMember', member });
+    members.push(member);
+    ['am-name','am-position','am-dept','am-phone'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('am-level').value = '';
+    addMemberOpen = false;
+    document.getElementById('add-member-form').classList.add('hidden');
+    renderMembers();
+  } catch(e) {
+    alert('Failed to save member. Check your connection.');
+  }
+  btn.disabled = false; btn.textContent = 'Add Member';
+}
+
+async function deleteMember(id) {
+  if (!confirm('Remove this member?')) return;
+  try {
+    await api({ action: 'deleteMember', memberId: id });
+    members = members.filter(m => m.id !== id);
+    renderMembers();
+  } catch(e) { alert('Failed to delete. Check connection.'); }
+}
+
+function renderMembers() {
+  const search = (document.getElementById('member-search')?.value || '').toLowerCase();
+  const filtered = members.filter(m =>
+    m.fullName.toLowerCase().includes(search) ||
+    (m.department||'').toLowerCase().includes(search) ||
+    (m.position||'').toLowerCase().includes(search)
+  );
+  document.getElementById('member-count-title').textContent = '(' + members.length + ')';
+  const list = document.getElementById('members-list');
+  if (filtered.length === 0) { list.innerHTML = '<div class="empty">No members found.</div>'; return; }
+  list.innerHTML = filtered.map(m => `
+    <div class="card-sm">
+      <div class="row-between">
+        <div>
+          <p class="font-semi">${m.fullName}</p>
+          <p class="text-xs text-muted mt-1">${[m.position, m.department, m.level ? m.level+'L' : ''].filter(Boolean).join(' · ')}</p>
+        </div>
+        <div class="row gap-2">
+          <span class="pill ${m.gender==='Male'?'pill-blue':'pill-amber'}">${m.gender}</span>
+          <button onclick="openEditModal('${m.id}')" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 6px;border:1px solid var(--border2);border-radius:8px">Edit</button>
+          <button onclick="deleteMember('${m.id}')" style="background:none;border:none;color:var(--faint);font-size:18px;cursor:pointer;padding:2px 4px">×</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ============================================================
+// EDIT MEMBER
+// ============================================================
+function openEditModal(id) {
+  const m = members.find(m => m.id === id);
+  if (!m) return;
+  document.getElementById('em-id').value = m.id;
+  document.getElementById('em-name').value = m.fullName;
+  document.getElementById('em-position').value = m.position || '';
+  document.getElementById('em-dept').value = m.department || '';
+  document.getElementById('em-level').value = m.level || '';
+  document.getElementById('em-phone').value = m.phone || '';
+  document.getElementById('em-gender').value = m.gender || 'Male';
+  const modal = document.getElementById('edit-member-modal');
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+}
+
+function closeEditModal() {
+  const modal = document.getElementById('edit-member-modal');
+  modal.classList.add('hidden');
+  modal.style.display = 'none';
+}
+
+async function saveEditMember() {
+  const name = document.getElementById('em-name').value.trim();
+  if (!name) { alert('Full name is required.'); return; }
+  const btn = document.getElementById('em-submit');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  const updated = {
+    id: document.getElementById('em-id').value,
+    fullName: name,
+    position: document.getElementById('em-position').value.trim(),
+    department: document.getElementById('em-dept').value.trim(),
+    level: document.getElementById('em-level').value,
+    phone: document.getElementById('em-phone').value.trim(),
+    gender: document.getElementById('em-gender').value
+  };
+  try {
+    await api({ action: 'updateMember', member: updated });
+    const idx = members.findIndex(m => m.id === updated.id);
+    if (idx !== -1) members[idx] = { ...members[idx], ...updated };
+    closeEditModal();
+    renderMembers();
+  } catch(e) {
+    alert('Failed to save changes. Check your connection.');
+  }
+  btn.disabled = false; btn.textContent = 'Save Changes';
+}
+
+// ============================================================
+// QR CARDS
+// ============================================================
+function renderQRCards() {
+  const list = document.getElementById('qr-list');
+  if (members.length === 0) { list.innerHTML = '<div class="empty">No members yet. Add members first.</div>'; return; }
+  list.innerHTML = members.map(m => `
+    <div class="card-sm" style="overflow:hidden">
+      <div class="row-between" style="cursor:pointer" onclick="toggleQR('${m.id}')">
+        <div>
+          <p class="font-semi">${m.fullName}</p>
+          <p class="text-xs text-muted">${[m.position, m.department].filter(Boolean).join(' · ')}</p>
+        </div>
+        <span id="qr-arrow-${m.id}" style="color:var(--muted)">▼</span>
+      </div>
+      <div id="qr-body-${m.id}" style="display:none;margin-top:16px;flex-direction:column;align-items:center;gap:10px;padding-top:14px;border-top:1px solid var(--border)">
+        <div class="qr-wrap" id="qr-canvas-${m.id}"></div>
+        <p class="text-xs text-muted">ID: ${m.id}</p>
+        <p class="text-xs text-muted text-center">Screenshot this and save to phone</p>
+      </div>
+    </div>`).join('');
+}
+
+function toggleQR(id) {
+  const body = document.getElementById('qr-body-' + id);
+  const arrow = document.getElementById('qr-arrow-' + id);
+  const isOpen = body.style.display === 'flex';
+  members.forEach(m => {
+    const b = document.getElementById('qr-body-' + m.id);
+    const a = document.getElementById('qr-arrow-' + m.id);
+    if (b) b.style.display = 'none';
+    if (a) a.textContent = '▼';
+  });
+  if (!isOpen) {
+    body.style.display = 'flex';
+    arrow.textContent = '▲';
+    const container = document.getElementById('qr-canvas-' + id);
+    container.innerHTML = '';
+    new QRCode(container, { text: id, width: 170, height: 170, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+  }
+}
+
+// ============================================================
+// TRACKER
+// ============================================================
+function renderTracker() {
+  const search = (document.getElementById('tracker-search')?.value || '').toLowerCase();
+  const filtered = members.filter(m => m.fullName.toLowerCase().includes(search));
+  const list = document.getElementById('tracker-list');
+  if (filtered.length === 0) { list.innerHTML = '<div class="empty">No members found.</div>'; return; }
+  list.innerHTML = filtered.map(m => {
+    const present = sessions.filter(s => s.attendees.find(a => a.memberId === m.id));
+    const absent = sessions.filter(s => !s.attendees.find(a => a.memberId === m.id));
+    const rate = sessions.length > 0 ? Math.round((present.length / sessions.length) * 100) : 0;
+    const color = rate >= 75 ? 'var(--green)' : rate >= 50 ? 'var(--amber)' : 'var(--red)';
+    const sessionRows = sessions.map(s => {
+      const wasPresent = s.attendees.find(a => a.memberId === m.id);
+      return `<div class="row-between" style="padding:5px 0;border-bottom:1px solid var(--border)">
+        <span class="text-xs text-muted">${s.name}</span>
+        <span class="pill ${wasPresent ? 'pill-green' : 'pill-red'}">${wasPresent ? 'Present' : 'Absent'}</span>
+      </div>`;
+    }).join('');
+    return `
+      <div class="card-sm" style="overflow:hidden">
+        <div class="row-between" style="cursor:pointer" onclick="toggleTracker('${m.id}')">
+          <div>
+            <p class="font-semi">${m.fullName}</p>
+            <p class="text-xs text-muted">${m.position||''}</p>
+            <div class="progress-bar" style="width:150px">
+              <div class="progress-fill" style="width:${rate}%;background:${color}"></div>
+            </div>
+          </div>
+          <div class="col" style="align-items:flex-end;gap:6px">
+            <span style="font-family:Syne;font-size:18px;font-weight:800;color:${color}">${rate}%</span>
+            <span id="tr-arrow-${m.id}" style="color:var(--muted);font-size:12px">▼</span>
+          </div>
+        </div>
+        <div id="tr-body-${m.id}" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div class="stats-grid" style="margin-bottom:12px">
+            <div class="stat-box"><div class="stat-num text-green">${present.length}</div><div class="text-xs text-muted mt-1">Present</div></div>
+            <div class="stat-box"><div class="stat-num text-red">${absent.length}</div><div class="text-xs text-muted mt-1">Absent</div></div>
+            <div class="stat-box"><div class="stat-num">${sessions.length}</div><div class="text-xs text-muted mt-1">Total</div></div>
+          </div>
+          <p class="label" style="margin-bottom:8px">Session History</p>
+          <div style="max-height:180px;overflow-y:auto">${sessions.length === 0 ? '<p class="text-xs text-muted">No sessions yet.</p>' : sessionRows}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleTracker(id) {
+  const body = document.getElementById('tr-body-' + id);
+  const arrow = document.getElementById('tr-arrow-' + id);
+  const isOpen = body.style.display === 'block';
+  members.forEach(m => {
+    const b = document.getElementById('tr-body-' + m.id);
+    const a = document.getElementById('tr-arrow-' + m.id);
+    if (b) b.style.display = 'none';
+    if (a) a.textContent = '▼';
+  });
+  if (!isOpen) { body.style.display = 'block'; arrow.textContent = '▲'; }
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+document.querySelector('.bottom-nav').style.display = 'none';
+init();
+</script>
+</body>
+</html>
